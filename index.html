@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔥 热梗词典 — 最新网络热梗百科</title>
+  <style>
+    :root {
+      --primary: #ff4d4f;
+      --primary-light: #fff1f0;
+      --accent: #fa8c16;
+      --success: #52c41a;
+      --bg: #f5f5f5;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --text-secondary: #666;
+      --text-muted: #999;
+      --border: #e8e8e8;
+      --radius: 12px;
+      --shadow: 0 2px 12px rgba(0,0,0,.08);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', sans-serif; background:var(--bg); color:var(--text); }
+
+    .header {
+      background: #fff; border-bottom:1px solid var(--border);
+      position:sticky; top:0; z-index:100; box-shadow:0 1px 6px rgba(0,0,0,.06);
+    }
+    .header-inner {
+      max-width:1100px; margin:0 auto; padding:0 20px;
+      height:60px; display:flex; align-items:center; justify-content:space-between;
+    }
+    .logo { font-size:22px; font-weight:800; cursor:pointer; }
+    .logo span { color:var(--primary); }
+    .header-actions { display:flex; gap:10px; }
+    .btn { padding:8px 18px; border-radius:8px; border:none; cursor:pointer; font-size:14px; font-weight:600; transition:all .2s; }
+    .btn-primary { background:var(--primary); color:#fff; }
+    .btn-primary:hover { background:#cf1322; }
+    .btn-outline { background:#fff; border:1.5px solid var(--border); color:var(--text-secondary); }
+    .btn-outline:hover { border-color:var(--primary); color:var(--primary); }
+    .btn-success { background:var(--success); color:#fff; }
+    .btn-success:hover { background:#389e0d; }
+
+    .container { max-width:1100px; margin:0 auto; padding:20px; }
+
+    .hero {
+      background: linear-gradient(135deg, #ff4d4f 0%, #ff7a45 50%, #fa8c16 100%);
+      border-radius:var(--radius); padding:40px 30px; margin-bottom:24px;
+      text-align:center; color:#fff;
+    }
+    .hero h1 { font-size:32px; font-weight:800; margin-bottom:8px; }
+    .hero p { font-size:15px; opacity:.85; margin-bottom:24px; }
+    .search-box {
+      max-width:560px; margin:0 auto; display:flex; background:#fff;
+      border-radius:10px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,.15);
+    }
+    .search-box input {
+      flex:1; padding:14px 18px; border:none; outline:none; font-size:15px;
+    }
+    .search-box button {
+      padding:0 24px; border:none; background:var(--primary); color:#fff;
+      font-size:15px; font-weight:700; cursor:pointer; transition:background .2s;
+    }
+    .search-box button:hover { background:#cf1322; }
+
+    .cat-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+    .cat-tab {
+      padding:7px 16px; border-radius:20px; border:1.5px solid var(--border);
+      background:#fff; cursor:pointer; font-size:13px; font-weight:600;
+      color:var(--text-secondary); transition:all .2s;
+    }
+    .cat-tab:hover { border-color:var(--primary); color:var(--primary); }
+    .cat-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+    .toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+    .sort-btns { display:flex; gap:6px; }
+    .sort-btn {
+      padding:6px 14px; border-radius:8px; border:1.5px solid var(--border);
+      background:#fff; cursor:pointer; font-size:13px; color:var(--text-secondary); transition:all .2s;
+    }
+    .sort-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .result-count { font-size:13px; color:var(--text-muted); }
+
+    .meme-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:16px; }
+    @media(max-width:600px) { .meme-grid { grid-template-columns:1fr 1fr; } }
+    .meme-card {
+      background:var(--card); border-radius:var(--radius); padding:20px;
+      box-shadow:var(--shadow); cursor:pointer; transition:all .2s;
+      border:2px solid transparent; position:relative; overflow:hidden;
+    }
+    .meme-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.12); border-color:var(--primary); }
+    .meme-card-emoji { font-size:36px; margin-bottom:10px; }
+    .meme-card-title { font-size:16px; font-weight:700; margin-bottom:6px; line-height:1.3; }
+    .meme-card-desc { font-size:12px; color:var(--text-secondary); line-height:1.5; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .meme-card-meta { display:flex; align-items:center; gap:8px; margin-top:12px; }
+    .meme-card-heat { font-size:12px; color:var(--accent); font-weight:700; }
+    .meme-card-cat { font-size:11px; padding:2px 8px; border-radius:6px; background:var(--primary-light); color:var(--primary); font-weight:600; }
+    .heat-badge { position:absolute; top:12px; right:12px; font-size:11px; padding:2px 8px; border-radius:6px; font-weight:700; }
+    .heat-badge.new { background:#fff1f0; color:#ff4d4f; }
+    .heat-badge.rising { background:#fff7e6; color:#fa8c16; }
+    .heat-badge.explode { background:#fff1f0; color:#cf1322; }
+    .heat-badge.classic { background:#f5f5f5; color:#999; }
+
+    .empty { text-align:center; padding:60px 20px; color:var(--text-muted); }
+    .empty-icon { font-size:48px; margin-bottom:12px; }
+    .empty-text { font-size:15px; }
+
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200;
+      display:flex; align-items:center; justify-content:center; padding:20px;
+      opacity:0; pointer-events:none; transition:opacity .25s;
+    }
+    .modal-overlay.show { opacity:1; pointer-events:auto; }
+    .modal {
+      background:#fff; border-radius:16px; width:100%; max-width:580px;
+      max-height:85vh; overflow-y:auto; box-shadow:0 24px 80px rgba(0,0,0,.25);
+      transform:scale(.95); transition:transform .25s; position:relative;
+    }
+    .modal-overlay.show .modal { transform:scale(1); }
+    .modal-hero { padding:28px 28px 20px; border-radius:16px 16px 0 0; }
+    .modal-emoji { font-size:48px; margin-bottom:10px; }
+    .modal-title { font-size:24px; font-weight:800; margin-bottom:6px; }
+    .modal-subtitle { font-size:14px; opacity:.8; }
+    .modal-body { padding:20px 28px 28px; }
+    .modal-desc { font-size:15px; line-height:1.8; margin-bottom:20px; color:#333; }
+    .modal-section { margin-bottom:16px; }
+    .modal-section-title { font-size:13px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+    .modal-tags { display:flex; gap:6px; flex-wrap:wrap; }
+    .modal-tag { padding:4px 10px; border-radius:6px; font-size:12px; font-weight:600; }
+    .modal-origin { font-size:13px; color:var(--text-secondary); line-height:1.7; background:#fafafa; border-radius:8px; padding:12px 14px; }
+    .modal-examples { list-style:none; padding:0; }
+    .modal-examples li { font-size:13px; color:var(--text-secondary); padding:6px 0; border-bottom:1px solid #f0f0f0; line-height:1.6; }
+    .modal-examples li::before { content:"💬 "; }
+    .modal-close-btn {
+      position:absolute; top:16px; right:16px; width:32px; height:32px;
+      border-radius:50%; border:none; background:rgba(255,255,255,.3); cursor:pointer;
+      font-size:18px; display:flex; align-items:center; justify-content:center; transition:background .2s;
+    }
+    .modal-close-btn:hover { background:rgba(255,255,255,.6); }
+
+    .submit-modal .modal { max-width:520px; }
+    .submit-modal .modal-body { padding:24px 28px; }
+    .form-group { margin-bottom:16px; }
+    .form-label { font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; display:block; }
+    .form-input, .form-textarea, .form-select {
+      width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:8px;
+      font-size:14px; outline:none; transition:border-color .2s; font-family:inherit;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color:var(--primary); }
+    .form-textarea { min-height:90px; resize:vertical; }
+    .form-hint { font-size:11px; color:var(--text-muted); margin-top:4px; }
+
+    .submit-success { text-align:center; padding:40px 20px; }
+    .submit-success-icon { font-size:56px; margin-bottom:16px; }
+    .submit-success-text { font-size:18px; font-weight:700; margin-bottom:8px; }
+    .submit-success-sub { font-size:13px; color:var(--text-muted); }
+
+    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(10px); background:#1a1a1a; color:#fff; padding:12px 24px; border-radius:10px; font-size:14px; z-index:9999; opacity:0; transition:all .3s; pointer-events:none; white-space:nowrap; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    .toast.success { background:#389e0d; }
+    .toast.error { background:#cf1322; }
+    .toast.warning { background:#d48806; }
+
+    .loading { text-align:center; padding:40px; color:var(--text-muted); font-size:14px; }
+    .spinner { display:inline-block; width:20px; height:20px; border:2px solid #f0f0f0; border-top-color:var(--primary); border-radius:50%; animation:spin .6s linear infinite; margin-right:8px; vertical-align:middle; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .footer { text-align:center; padding:30px 20px; color:var(--text-muted); font-size:13px; }
+    .footer a { color:var(--primary); text-decoration:none; }
+
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:#ccc; border-radius:3px; }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="logo" onclick="goHome()">🔥 <span>热梗词典</span></div>
+    <div class="header-actions">
+      <button class="btn btn-outline" onclick="openSubmitModal()">✍️ 投稿热梗</button>
+      <button class="btn btn-primary" onclick="openSubmitModal()">+ 我要投稿</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="hero">
+    <h1>🔥 热梗词典</h1>
+    <p>收录最新、最全的中文互联网热梗，从此不再 OUT</p>
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="搜索热梗，如：哭哭马、栓Q..." onkeydown="if(event.key==='Enter')searchMemes()">
+      <button onclick="searchMemes()">搜索</button>
+    </div>
+  </div>
+
+  <div class="cat-tabs" id="cat-tabs">
+    <div class="cat-tab active" onclick="filterByCat('',this)">全部</div>
+    <div class="cat-tab" onclick="filterByCat('搞笑',this)">😂 搞笑</div>
+    <div class="cat-tab" onclick="filterByCat('二次元',this)">🎮 二次元</div>
+    <div class="cat-tab" onclick="filterByCat('影视综艺',this)">🎬 影视综艺</div>
+    <div class="cat-tab" onclick="filterByCat('职场',this)">💼 职场</div>
+    <div class="cat-tab" onclick="filterByCat('情感',this)">❤️ 情感</div>
+    <div class="cat-tab" onclick="filterByCat('校园',this)">🏫 校园</div>
+    <div class="cat-tab" onclick="filterByCat('饭圈',this)">🎤 饭圈</div>
+    <div class="cat-tab" onclick="filterByCat('网络流行',this)">🌐 网络流行</div>
+  </div>
+
+  <div class="toolbar">
+    <div class="sort-btns">
+      <button class="sort-btn active" onclick="sortBy('heat',this)">🔥 按热度</button>
+      <button class="sort-btn" onclick="sortBy('new',this)">🆕 按最新</button>
+    </div>
+    <div class="result-count" id="result-count">加载中...</div>
+  </div>
+
+  <div class="meme-grid" id="meme-grid">
+    <div class="loading"><span class="spinner"></span>加载热梗中...</div>
+  </div>
+</div>
+
+<div class="footer">
+  🔥 热梗词典 · 收录互联网最热梗 · <a href="/admin.html" target="_blank">管理员入口</a>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <button class="modal-close-btn" onclick="closeModal('detail-modal')">✕</button>
+    <div class="modal-hero" id="detail-hero">
+      <div class="modal-emoji" id="detail-emoji"></div>
+      <div class="modal-title" id="detail-title"></div>
+      <div class="modal-subtitle" id="detail-subtitle"></div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-section-title">简介</div>
+        <div class="modal-desc" id="detail-desc"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">分类 & 热度</div>
+        <div class="modal-tags" id="detail-tags"></div>
+      </div>
+      <div class="modal-section" id="detail-source-section" style="display:none;">
+        <div class="modal-section-title">来源链接</div>
+        <div class="modal-source" id="detail-source"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">起源</div>
+        <div class="modal-origin" id="detail-origin"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">使用示例</div>
+        <ul class="modal-examples" id="detail-examples"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 投稿弹窗 -->
+<div class="modal-overlay submit-modal" id="submit-modal">
+  <div class="modal">
+    <button class="modal-close-btn" onclick="closeModal('submit-modal')">✕</button>
+    <div id="submit-form-wrap">
+      <div class="modal-body" style="padding-bottom:12px;">
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:4px;">✍️ 投稿热梗</h3>
+        <p style="font-size:13px;color:#999;margin-bottom:20px;">发现新梗？帮忙补充到词典吧！审核通过后即发布。</p>
+      </div>
+      <div class="modal-body" style="padding-top:0;padding-bottom:24px;">
+        <div class="form-group">
+          <label class="form-label">* 梗名称</label>
+          <input type="text" class="form-input" id="submit-title" placeholder="如：哭哭马" maxlength="30">
+        </div>
+        <div class="form-group">
+          <label class="form-label">* 简介描述</label>
+          <textarea class="form-textarea" id="submit-desc" placeholder="这个梗是什么意思，怎么用..."></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">分类</label>
+            <select class="form-select" id="submit-cat">
+              <option>搞笑</option><option>二次元</option><option>影视综艺</option>
+              <option>职场</option><option>情感</option><option>校园</option>
+              <option>饭圈</option><option>网络流行</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">来源平台</label>
+            <input type="text" class="form-input" id="submit-platform" placeholder="如：微博、B站">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">参考链接（可选）</label>
+          <input type="text" class="form-input" id="submit-url" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">你的昵称（可选）</label>
+          <input type="text" class="form-input" id="submit-name" placeholder="匿名用户">
+          <div class="form-hint">留空则显示为"匿名用户"</div>
+        </div>
+        <button class="btn btn-success" style="width:100%;padding:12px;font-size:15px;" onclick="submitMeme()">🚀 提交投稿</button>
+      </div>
+    </div>
+    <div id="submit-success-wrap" style="display:none;">
+      <div class="submit-success">
+        <div class="submit-success-icon">🎉</div>
+        <div class="submit-success-text">投稿成功！</div>
+        <div class="submit-success-sub">感谢贡献，管理员审核通过后会正式发布</div>
+        <button class="btn btn-primary" style="margin-top:20px;" onclick="closeModal('submit-modal')">好的</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '/api';  // 部署版 API 地址
+let allMemes = [];
+let currentCat = '';
+let currentSort = 'heat';
+
+const HEAT_STATUS_MAP = {
+  'new':    { label: '🆕 新梗',  cls: 'new' },
+  'rising': { label: '📈 上升',  cls: 'rising' },
+  'explode':{ label: '💥 爆梗',  cls: 'explode' },
+  'classic': { label: '⭐ 经典',  cls: 'classic' }
+};
+
+async function loadMemes() {
+  try {
+    const resp = await fetch(API + '/memes');
+    const data = await resp.json();
+    allMemes = data.data || [];
+    renderGrid();
+  } catch (e) {
+    document.getElementById('meme-grid').innerHTML =
+      '<div class="empty"><div class="empty-icon">⚠️</div>' +
+      '<div class="empty-text">加载失败，请确认后端服务已启动<br><small style="color:#ccc;">' +
+      e.message + '</small></div></div>';
+  }
+}
+
+function renderGrid() {
+  let data = [...allMemes];
+  if (currentCat) data = data.filter(m => m.category === currentCat);
+  if (currentSort === 'heat') data.sort((a,b) => (b.heatValue||0) - (a.heatValue||0));
+  else data.sort((a,b) => new Date(b.createdAt||0) - new Date(a.createdAt||0));
+
+  document.getElementById('result-count').textContent = '共 ' + data.length + ' 条热梗';
+
+  const grid = document.getElementById('meme-grid');
+  if (!data.length) {
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">暂无符合条件的热梗</div></div>';
+    return;
+  }
+
+  grid.innerHTML = data.map(m => {
+    const st = HEAT_STATUS_MAP[m.heatStatus] || HEAT_STATUS_MAP['new'];
+    const sourceLink = (m.sourceUrl && m.sourceUrl !== '#') ? '<div style="margin-top:6px;"><a href="' + m.sourceUrl + '" target="_blank" style="font-size:11px;color:#1677ff;text-decoration:none;" onclick="event.stopPropagation();">🔗 查看来源</a></div>' : '';
+    const sourceNameHtml = m.sourceName ? '<div style="font-size:10px;color:#999;margin-top:2px;">📌 ' + escHtml(m.sourceName) + '</div>' : '';
+    return '<div class="meme-card" onclick="showDetail(\'' + m.id + '\')">' +
+      '<div class="heat-badge ' + st.cls + '">' + st.label + '</div>' +
+      '<div class="meme-card-emoji">' + (m.emoji||'🔥') + '</div>' +
+      '<div class="meme-card-title">' + escHtml(m.title) + '</div>' +
+      '<div class="meme-card-desc">' + escHtml(m.description||'暂无描述') + '</div>' +
+      sourceNameHtml +
+      sourceLink +
+      '<div class="meme-card-meta">' +
+        '<span class="meme-card-heat">🔥 ' + formatHeat(m.heatValue) + '</span>' +
+        '<span class="meme-card-cat">' + escHtml(m.category||'其他') + '</span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function searchMemes() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) { loadMemes(); return; }
+  try {
+    const resp = await fetch(API + '/memes?q=' + encodeURIComponent(q));
+    const data = await resp.json();
+    allMemes = data.data || [];
+    currentCat = '';
+    document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('.cat-tab').classList.add('active');
+    renderGrid();
+  } catch (e) {
+    showToast('搜索失败: ' + e.message, 'error');
+  }
+}
+
+function filterByCat(cat, el) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const q = document.getElementById('search-input').value.trim();
+  if (q) { searchMemes(); return; }
+  renderGrid();
+}
+
+function sortBy(sort, el) {
+  currentSort = sort;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+
+async function showDetail(id) {
+  const m = allMemes.find(x => x.id == id);
+  if (!m) return;
+
+  const gradients = [
+    'linear-gradient(135deg,#ff4d4f,#ff7a45)',
+    'linear-gradient(135deg,#1677ff,#69b1ff)',
+    'linear-gradient(135deg,#722ed1,#b37feb)',
+    'linear-gradient(135deg,#13c2c2,#5cdbd3)',
+    'linear-gradient(135deg,#fa8c16,#ffc53d)',
+    'linear-gradient(135deg,#eb2f96,#ff85c8)',
+  ];
+  const color = gradients[Math.abs(String(id).hashCode()) % gradients.length];
+
+  document.getElementById('detail-hero').style.background = color;
+  document.getElementById('detail-emoji').textContent = m.emoji || '🔥';
+  document.getElementById('detail-title').textContent = m.title;
+  document.getElementById('detail-subtitle').textContent = (m.category || '网络流行') + ' · ' + formatHeat(m.heatValue) + ' 热度';
+  document.getElementById('detail-desc').textContent = m.description || '暂无描述';
+
+  const st = HEAT_STATUS_MAP[m.heatStatus] || HEAT_STATUS_MAP['new'];
+  document.getElementById('detail-tags').innerHTML =
+    '<span class="modal-tag" style="background:#fff1f0;color:#ff4d4f;">' + escHtml(m.category||'其他') + '</span>' +
+    '<span class="modal-tag" style="background:#fff7e6;color:#fa8c16;">🔥 ' + formatHeat(m.heatValue) + '</span>' +
+    '<span class="modal-tag" style="background:#e6f4ff;color:#1677ff;">' + escHtml(m.sourcePlatform||'未知平台') + '</span>' +
+    '<span class="modal-tag" style="background:#f6ffed;color:#389e0d;">' + st.label + '</span>';
+
+  document.getElementById('detail-origin').textContent = m.origin || '暂无起源说明';
+
+  // 来源链接
+  const sourceSection = document.getElementById('detail-source-section');
+  const sourceDiv = document.getElementById('detail-source');
+  if (m.sourceUrl && m.sourceUrl !== '#') {
+    sourceDiv.innerHTML = '<a href="' + m.sourceUrl + '" target="_blank" style="color:#1677ff;text-decoration:none;font-size:14px;">🔗 点击查看原始来源' + (m.sourceName ? '（' + m.sourceName + '）' : '') + '</a>';
+    sourceSection.style.display = '';
+  } else {
+    sourceSection.style.display = 'none';
+  }
+
+  const examples = m.examples || [];
+  document.getElementById('detail-examples').innerHTML = examples.length
+    ? examples.map(e => '<li>' + escHtml(e) + '</li>').join('')
+    : '<li style="color:#ccc;">暂无使用示例</li>';
+
+  document.getElementById('detail-modal').classList.add('show');
+}
+
+function openSubmitModal() {
+  document.getElementById('submit-form-wrap').style.display = '';
+  document.getElementById('submit-success-wrap').style.display = 'none';
+  ['submit-title','submit-desc','submit-platform','submit-url','submit-name'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('submit-cat').value = '搞笑';
+  document.getElementById('submit-modal').classList.add('show');
+}
+
+async function submitMeme() {
+  const title = document.getElementById('submit-title').value.trim();
+  const description = document.getElementById('submit-desc').value.trim();
+  if (!title || !description) { showToast('请填写梗名称和简介', 'error'); return; }
+
+  const payload = {
+    title: title,
+    description: description,
+    category: document.getElementById('submit-cat').value,
+    sourcePlatform: document.getElementById('submit-platform').value || '用户投稿',
+    sourceUrl: document.getElementById('submit-url').value || '',
+    submitter: document.getElementById('submit-name').value.trim() || '匿名用户',
+  };
+
+  try {
+    const resp = await fetch(API + '/pending', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (data.success) {
+      document.getElementById('submit-form-wrap').style.display = 'none';
+      document.getElementById('submit-success-wrap').style.display = '';
+    } else {
+      showToast(data.error || '投稿失败', 'error');
+    }
+  } catch (e) {
+    showToast('投稿失败，请检查网络: ' + e.message, 'error');
+  }
+}
+
+function goHome() {
+  document.getElementById('search-input').value = '';
+  currentCat = '';
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.cat-tab').classList.add('active');
+  loadMemes();
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// 点击遮罩关闭
+document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.classList.remove('show');
+  });
+});
+
+function formatHeat(n) {
+  if (!n) return '—';
+  if (n >= 10000000) return (n/10000000).toFixed(1) + '千万';
+  if (n >= 1000000) return (n/1000000).toFixed(1) + '百万';
+  if (n >= 10000) return (n/10000).toFixed(1) + '万';
+  return n.toLocaleString();
+}
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// 简单的 HTML 转义，防止 XSS
+function escHtml(str) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+
+// 给 String 添加 hashCode 方法，用于选择渐变色
+String.prototype.hashCode = function() {
+  var hash = 0, i, chr;
+  for (i = 0; i < this.length; i++) {
+    chr = this.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0;
+  }
+  return hash;
+};
+
+loadMemes();
+</script>
+</body>
+</html>

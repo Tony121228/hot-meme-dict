@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>梗词典 · 管理员后台</title>
+  <style>
+    :root {
+      --primary: #ff4d4f;
+      --primary-dark: #cf1322;
+      --primary-light: #fff1f0;
+      --accent: #fa8c16;
+      --success: #52c41a;
+      --warning: #faad14;
+      --danger: #ff4d4f;
+      --info: #1677ff;
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --text-secondary: #666;
+      --text-muted: #999;
+      --border: #e8e8e8;
+      --sidebar-w: 220px;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(0,0,0,.07);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+
+    /* ── 侧边栏 ── */
+    .sidebar {
+      width: var(--sidebar-w); background:#1a1a2e; min-height:100vh;
+      position:fixed; top:0; left:0; z-index:100;
+      display:flex; flex-direction:column;
+    }
+    .sidebar-logo {
+      padding:20px 20px 16px; display:flex; align-items:center; gap:10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .sidebar-logo-icon { width:36px; height:36px; background:var(--primary); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+    .sidebar-logo-text { color:#fff; font-size:16px; font-weight:700; }
+    .sidebar-logo-sub { color:rgba(255,255,255,.4); font-size:11px; margin-top:2px; }
+    .sidebar-nav { padding:12px 0; flex:1; }
+    .nav-section-title { color:rgba(255,255,255,.3); font-size:11px; font-weight:600; padding:8px 20px 4px; text-transform:uppercase; letter-spacing:.5px; }
+    .nav-item {
+      display:flex; align-items:center; gap:10px; padding:10px 20px;
+      color:rgba(255,255,255,.65); cursor:pointer; transition:all .2s;
+      font-size:14px; border-left:3px solid transparent; margin:1px 0;
+    }
+    .nav-item:hover { background:rgba(255,255,255,.06); color:#fff; }
+    .nav-item.active { background:rgba(255,77,79,.15); color:var(--primary); border-left-color:var(--primary); }
+    .nav-item-icon { font-size:17px; width:22px; text-align:center; }
+    .nav-badge { margin-left:auto; background:var(--primary); color:#fff; font-size:10px; padding:1px 6px; border-radius:8px; }
+    .sidebar-footer { padding:14px 20px; border-top:1px solid rgba(255,255,255,.08); }
+    .sidebar-footer a { color:rgba(255,255,255,.4); font-size:12px; text-decoration:none; }
+    .sidebar-footer a:hover { color:#fff; }
+
+    /* ── 主区域 ── */
+    .main-wrap { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; min-height:100vh; }
+    .topbar {
+      background:#fff; padding:0 24px; height:60px; display:flex; align-items:center;
+      justify-content:space-between; border-bottom:1px solid var(--border);
+      position:sticky; top:0; z-index:50; box-shadow:0 1px 4px rgba(0,0,0,.06);
+    }
+    .topbar-title { font-size:18px; font-weight:700; }
+    .topbar-right { display:flex; align-items:center; gap:14px; }
+    .topbar-btn {
+      padding:7px 16px; border-radius:8px; border:1.5px solid var(--border);
+      background:#fff; cursor:pointer; font-size:13px; color:var(--text-secondary);
+      transition:all .2s; display:flex; align-items:center; gap:6px;
+    }
+    .topbar-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .topbar-btn.primary { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .topbar-btn.primary:hover { background:var(--primary-dark); }
+    .content { padding:24px; }
+
+    /* ── 统计卡片 ── */
+    .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+    @media(max-width:1000px){ .stats-grid { grid-template-columns:repeat(2,1fr); } }
+    .stat-card {
+      background:var(--card); border-radius:var(--radius); padding:20px;
+      box-shadow:var(--shadow); display:flex; align-items:center; gap:16px;
+    }
+    .stat-icon { width:52px; height:52px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
+    .stat-icon.red { background:#fff1f0; }
+    .stat-icon.orange { background:#fff7e6; }
+    .stat-icon.green { background:#f6ffed; }
+    .stat-icon.blue { background:#e6f4ff; }
+    .stat-num { font-size:28px; font-weight:800; line-height:1; }
+    .stat-label { font-size:13px; color:var(--text-secondary); margin-top:4px; }
+    .stat-change { font-size:11px; color:var(--success); margin-top:2px; }
+
+    /* ── 页面区域 ── */
+    .page { display:none; }
+    .page.active { display:block; }
+
+    /* ── 卡片 ── */
+    .panel { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+    .panel-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .panel-title { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+    .panel-body { padding:20px; }
+
+    /* ── 工具栏 ── */
+    .toolbar { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+    .search-bar { display:flex; gap:8px; flex:1; min-width:200px; }
+    .search-input { flex:1; padding:8px 14px; border:1.5px solid var(--border); border-radius:8px; font-size:14px; outline:none; transition:border-color .2s; }
+    .search-input:focus { border-color:var(--primary); }
+    .filter-select { padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; outline:none; cursor:pointer; background:#fff; }
+    .filter-select:focus { border-color:var(--primary); }
+    .btn { padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-size:13px; font-weight:600; transition:all .2s; display:inline-flex; align-items:center; gap:6px; }
+    .btn-primary { background:var(--primary); color:#fff; }
+    .btn-primary:hover { background:var(--primary-dark); }
+    .btn-success { background:var(--success); color:#fff; }
+    .btn-success:hover { background:#389e0d; }
+    .btn-warning { background:var(--warning); color:#fff; }
+    .btn-warning:hover { background:#d48806; }
+    .btn-danger { background:var(--danger); color:#fff; }
+    .btn-danger:hover { background:var(--primary-dark); }
+    .btn-outline { background:#fff; border:1.5px solid var(--border); color:var(--text-secondary); }
+    .btn-outline:hover { border-color:var(--primary); color:var(--primary); }
+    .btn-sm { padding:5px 12px; font-size:12px; }
+
+    /* ── 表格 ── */
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table th { padding:11px 14px; background:#fafafa; font-size:12px; font-weight:600; color:var(--text-secondary); text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+    .data-table td { padding:12px 14px; border-bottom:1px solid #f5f5f5; font-size:13px; vertical-align:middle; }
+    .data-table tr:last-child td { border-bottom:none; }
+    .data-table tr:hover td { background:#fafafa; }
+    .cell-title { font-weight:700; font-size:14px; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cell-desc { color:var(--text-secondary); font-size:12px; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .heat-bar-wrap { display:flex; align-items:center; gap:8px; }
+    .heat-bar { height:6px; background:#f0f0f0; border-radius:3px; width:80px; overflow:hidden; }
+    .heat-bar-fill { height:100%; border-radius:3px; background:linear-gradient(90deg, #fa8c16, #ff4d4f); }
+    .heat-num { font-size:12px; color:var(--text-secondary); white-space:nowrap; }
+    .status-tag { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+    .status-approved { background:#f6ffed; color:#389e0d; }
+    .status-pending { background:#fff7e6; color:#d48806; }
+    .status-rejected { background:#fff1f0; color:#cf1322; }
+    .actions { display:flex; gap:6px; flex-wrap:nowrap; }
+    .platform-tag { display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; }
+    .platform-B站 { background:#fff1f0; color:#ff4d4f; }
+    .platform-微博 { background:#fff0f6; color:#eb2f96; }
+    .platform-百度 { background:#e6f4ff; color:#1677ff; }
+    .platform-知乎 { background:#e6f4ff; color:#0055d4; }
+    .platform-抖音 { background:#f9f0ff; color:#531dab; }
+    .platform-用户投稿 { background:#f6ffed; color:#389e0d; }
+    .platform-管理员添加 { background:#fffbe6; color:#ad6800; }
+
+    /* ── 分页 ── */
+    .pagination { display:flex; justify-content:flex-end; align-items:center; gap:6px; margin-top:16px; }
+    .page-btn { width:32px; height:32px; border-radius:6px; border:1.5px solid var(--border); background:#fff; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+    .page-btn:hover { border-color:var(--primary); color:var(--primary); }
+    .page-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .page-info { font-size:13px; color:var(--text-secondary); margin:0 6px; }
+
+    /* ── 模态框 ── */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .modal-overlay.show { opacity:1; pointer-events:auto; }
+    .modal { background:#fff; border-radius:14px; width:100%; max-width:560px; max-height:90vh; overflow-y:auto; box-shadow:0 24px 80px rgba(0,0,0,.2); transform:scale(.95); transition:transform .2s; }
+    .modal-overlay.show .modal { transform:scale(1); }
+    .modal-header { padding:20px 24px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+    .modal-title { font-size:17px; font-weight:700; }
+    .modal-close { width:32px; height:32px; border:none; background:#f5f5f5; border-radius:50%; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; transition:background .2s; }
+    .modal-close:hover { background:#e8e8e8; }
+    .modal-body { padding:20px 24px; }
+    .modal-footer { padding:14px 24px; border-top:1px solid var(--border); display:flex; justify-content:flex-end; gap:10px; }
+    .form-group { margin-bottom:16px; }
+    .form-label { font-size:13px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; display:block; }
+    .form-input, .form-textarea, .form-select {
+      width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px;
+      font-size:14px; outline:none; transition:border-color .2s; background:#fff;
+      font-family:inherit; color:var(--text);
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus { border-color:var(--primary); }
+    .form-textarea { min-height:80px; resize:vertical; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+    /* ── 爬虫页面 ── */
+    .crawler-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px; }
+    @media(max-width:1000px){ .crawler-grid { grid-template-columns:repeat(3,1fr); } }
+    .platform-card {
+      background:var(--card); border-radius:var(--radius); padding:16px 12px;
+      text-align:center; border:2px solid var(--border); transition:all .2s; cursor:pointer;
+      box-shadow:var(--shadow);
+    }
+    .platform-card:hover { border-color:var(--primary); }
+    .platform-card.selected { border-color:var(--primary); background:var(--primary-light); }
+    .platform-card-icon { font-size:32px; margin-bottom:8px; }
+    .platform-card-name { font-size:14px; font-weight:700; margin-bottom:4px; }
+    .platform-card-status { font-size:11px; color:var(--text-muted); }
+    .platform-card-status.ok { color:var(--success); }
+    .platform-card-status.error { color:var(--danger); }
+    .log-area { background:#1a1a2e; border-radius:10px; padding:16px; font-family:monospace; font-size:13px; color:#ccc; min-height:200px; max-height:400px; overflow-y:auto; line-height:1.8; }
+    .log-line { }
+    .log-ok { color:#52c41a; }
+    .log-warn { color:#faad14; }
+    .log-error { color:#ff4d4f; }
+    .log-info { color:#91caff; }
+    .progress-wrap { background:#f0f0f0; border-radius:8px; height:8px; margin:12px 0; overflow:hidden; }
+    .progress-bar { height:100%; background:linear-gradient(90deg,#fa8c16,#ff4d4f); border-radius:8px; transition:width .3s; }
+
+    /* ── 服务状态 ── */
+    .server-dot { width:14px; height:14px; border-radius:50%; display:inline-block; }
+    .server-dot.running { background:#52c41a; box-shadow:0 0 8px rgba(82,196,26,.4); }
+    .server-dot.stopped { background:#ff4d4f; }
+    .server-dot.checking { background:#faad14; }
+
+    /* ── Toast ── */
+    .toast { position:fixed; bottom:30px; right:30px; background:#1a1a1a; color:#fff; padding:12px 20px; border-radius:10px; font-size:14px; z-index:9999; opacity:0; transform:translateY(10px); transition:all .3s; pointer-events:none; max-width:320px; }
+    .toast.show { opacity:1; transform:translateY(0); }
+    .toast.success { background:#389e0d; }
+    .toast.error { background:#cf1322; }
+    .toast.warning { background:#d48806; }
+
+    /* ── 徽章 ── */
+    .badge { display:inline-block; padding:2px 8px; border-radius:8px; font-size:11px; font-weight:600; }
+    .badge-new { background:#fff1f0; color:#ff4d4f; }
+    .badge-rising { background:#fff7e6; color:#fa8c16; }
+    .badge-explode { background:#fff1f0; color:#820014; }
+    .badge-classic { background:#f5f5f5; color:#8c8c8c; }
+
+    /* ── 筛选规则说明 ── */
+    .rule-box { background:#fff7e6; border:1px solid #ffd591; border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:#874d00; display:flex; align-items:flex-start; gap:8px; }
+    .rule-box-icon { font-size:16px; flex-shrink:0; }
+
+    /* ── 空状态 ── */
+    .empty-state { text-align:center; padding:60px 20px; color:var(--text-muted); }
+    .empty-icon { font-size:48px; margin-bottom:12px; }
+    .empty-text { font-size:15px; }
+    .empty-sub { font-size:13px; margin-top:6px; }
+
+    /* ── 详情展开 ── */
+    .detail-expand { background:#fafafa; border-radius:8px; padding:12px 16px; margin-top:10px; font-size:13px; line-height:1.8; }
+    .detail-expand dt { font-weight:600; color:var(--text); }
+    .detail-expand dd { color:var(--text-secondary); margin-left:0; margin-bottom:6px; }
+
+    /* ── 滚动条 ── */
+    ::-webkit-scrollbar { width:6px; height:6px; }
+    ::-webkit-scrollbar-track { background:#f0f0f0; border-radius:3px; }
+    ::-webkit-scrollbar-thumb { background:#ccc; border-radius:3px; }
+    ::-webkit-scrollbar-thumb:hover { background:#aaa; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- 侧边栏 -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">🔥</div>
+    <div>
+      <div class="sidebar-logo-text">梗词典</div>
+      <div class="sidebar-logo-sub">管理员后台</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-title">数据管理</div>
+    <div class="nav-item active" onclick="switchPage('dashboard')" id="nav-dashboard">
+      <span class="nav-item-icon">📊</span> 数据总览
+    </div>
+    <div class="nav-item" onclick="switchPage('memes')" id="nav-memes">
+      <span class="nav-item-icon">📚</span> 梗库管理
+    </div>
+    <div class="nav-item" onclick="switchPage('pending')" id="nav-pending">
+      <span class="nav-item-icon">⏳</span> 投稿审核
+      <span class="nav-badge" id="pending-badge">0</span>
+    </div>
+    <div class="nav-section-title" style="margin-top:8px;">自动化</div>
+    <div class="nav-item" onclick="switchPage('crawler')" id="nav-crawler">
+      <span class="nav-item-icon">🤖</span> 爬虫控制
+    </div>
+    <div class="nav-section-title" style="margin-top:8px;">系统</div>
+    <div class="nav-item" onclick="viewUserFrontend()">
+      <span class="nav-item-icon">🌐</span> 查看用户端
+    </div>
+    <div class="nav-item" onclick="switchPage('server')" id="nav-server">
+      <span class="nav-item-icon">⚙️</span> 服务控制
+    </div>
+    <div class="nav-item" onclick="switchPage('filtered')" id="nav-filtered">
+      <span class="nav-item-icon">🗑️</span> 被过滤信息
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="//" target="_blank">← 返回用户端</a>
+  </div>
+</aside>
+
+<!-- 主区域 -->
+<div class="main-wrap">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">📊 数据总览</div>
+    <div class="topbar-right">
+      <span id="auth-status" style="font-size:12px;color:#999;">???</span>
+      <button class="topbar-btn" id="login-btn" onclick="openLogin()">Supabase ??</button>
+      <button class="topbar-btn" id="logout-btn" onclick="logout()" style="display:none;">??</button>
+      <button class="topbar-btn" onclick="refreshAll()">????</button>
+      <button class="topbar-btn primary" onclick="openAddModal()">+ ????</button>
+    </div>
+  </div>
+
+  <!-- 内容 -->
+  <div class="content">
+
+    <!-- ══ 数据总览 ══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon red">📚</div>
+          <div>
+            <div class="stat-num" id="stat-total">—</div>
+            <div class="stat-label">梗库总量</div>
+            <div class="stat-change" id="stat-active-info">加载中...</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">⏳</div>
+          <div>
+            <div class="stat-num" id="stat-pending">—</div>
+            <div class="stat-label">待审核投稿</div>
+            <div class="stat-change">含爬虫和用户投稿</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">✅</div>
+          <div>
+            <div class="stat-num" id="stat-filtered">—</div>
+            <div class="stat-label">已收录梗</div>
+            <div class="stat-change">全部为活跃梗</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">🤖</div>
+          <div>
+            <div class="stat-num" id="stat-last-crawl">—</div>
+            <div class="stat-label">上次爬取</div>
+            <div class="stat-change" id="stat-categories">— 个分类</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最新待审核 -->
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header">
+          <div class="panel-title">⏳ 最新待审核投稿</div>
+          <button class="btn btn-outline btn-sm" onclick="switchPage('pending')">查看全部</button>
+        </div>
+        <div class="panel-body" style="padding:0;">
+          <table class="data-table" id="dashboard-pending-table">
+            <thead>
+              <tr>
+                <th>标题</th><th>来源</th><th>热度</th><th>提交时间</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-pending-body">
+              <tr><td colspan="5" style="text-align:center;color:#999;padding:30px">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 热度排行 -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🔥 热度 Top 10</div>
+        </div>
+        <div class="panel-body" style="padding:0;">
+          <table class="data-table">
+            <thead>
+              <tr><th>#</th><th>标题</th><th>热度</th><th>分类</th><th>状态</th></tr>
+            </thead>
+            <tbody id="top10-body">
+              <tr><td colspan="5" style="text-align:center;color:#999;padding:30px">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 梗库管理 ══ -->
+    <div class="page" id="page-memes">
+      <div class="toolbar">
+        <div class="search-bar">
+          <input type="text" class="search-input" id="meme-search" placeholder="搜索梗库..." oninput="filterMemes()">
+        </div>
+        <select class="filter-select" id="meme-cat-filter" onchange="filterMemes()">
+          <option value="">全部分类</option>
+          <option>网络流行</option><option>职场</option><option>情感</option>
+          <option>搞笑</option><option>二次元</option><option>校园</option>
+          <option>影视综艺</option><option>饭圈</option>
+        </select>
+        <select class="filter-select" id="meme-sort" onchange="filterMemes()">
+          <option value="heat">按热度排序</option>
+          <option value="new">按时间排序</option>
+        </select>
+        <button class="btn btn-primary" onclick="openAddModal()">+ 新增热梗</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title" id="meme-count-title">📚 梗库列表</div>
+          <span id="meme-count-info" style="font-size:13px;color:#999;"></span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr><th>表情</th><th>标题</th><th>简介</th><th>分类</th><th>来源</th><th>热度</th><th>热度等级</th><th>创建时间</th><th>操作</th></tr>
+            </thead>
+            <tbody id="meme-table-body">
+              <tr><td colspan="9" style="text-align:center;color:#999;padding:40px">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:12px 16px; border-top:1px solid var(--border);">
+          <div class="pagination" id="meme-pagination"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══ 服务控制 ══ -->
+    <div class="page" id="page-server">
+      <div class="panel" style="max-width:800px;margin:0 auto;">
+        <div class="panel-header">
+          <div class="panel-title">⚙️ 服务控制</div>
+        </div>
+        <div class="panel-body" style="padding:24px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:20px;">
+            <!-- 前端服务卡片 -->
+            <div style="border:1.5px solid #e8e8e8;border-radius:12px;padding:18px;background:#fff;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <div id="frontend-status-dot" style="width:12px;height:12px;border-radius:50%;background:#ccc;"></div>
+                <div style="font-size:16px;font-weight:700;">🎨 前端服务</div>
+              </div>
+              <div style="font-size:13px;color:#999;margin-bottom:4px;">端口 3003 · <span id="frontend-status-text">检测中...</span></div>
+              <div style="font-size:12px;color:#bbb;margin-bottom:14px;">PID: <span id="frontend-pid">—</span></div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-success btn-sm" id="btn-frontend-start" onclick="serverControl('start','frontend')" style="display:none;font-size:12px;padding:6px 12px;">▶ 启动</button>
+                <button class="btn btn-danger btn-sm" id="btn-frontend-stop" onclick="serverControl('stop','frontend')" style="display:none;font-size:12px;padding:6px 12px;">■ 停止</button>
+              </div>
+            </div>
+            <!-- 后端服务卡片 -->
+            <div style="border:1.5px solid #e8e8e8;border-radius:12px;padding:18px;background:#fff;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <div id="backend-status-dot" style="width:12px;height:12px;border-radius:50%;background:#ccc;"></div>
+                <div style="font-size:16px;font-weight:700;">⚙️ 后端服务</div>
+              </div>
+              <div style="font-size:13px;color:#999;margin-bottom:4px;">端口 3001 · <span id="backend-status-text">检测中...</span></div>
+              <div style="font-size:12px;color:#bbb;margin-bottom:14px;">PID: <span id="backend-pid">—</span></div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-success btn-sm" id="btn-backend-start" onclick="serverControl('start','backend')" style="display:none;font-size:12px;padding:6px 12px;">▶ 启动</button>
+                <button class="btn btn-danger btn-sm" id="btn-backend-stop" onclick="serverControl('stop','backend')" style="display:none;font-size:12px;padding:6px 12px;">■ 停止</button>
+                <button class="btn btn-warning btn-sm" id="btn-backend-restart" onclick="serverControl('restart','backend')" style="display:none;font-size:12px;padding:6px 12px;">↻ 重启</button>
+              </div>
+            </div>
+            <!-- 进程管理器卡片 -->
+            <div style="border:1.5px solid #e8e8e8;border-radius:12px;padding:18px;background:#fff;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <div id="manager-status-dot" style="width:12px;height:12px;border-radius:50%;background:#ccc;"></div>
+                <div style="font-size:16px;font-weight:700;">🔧 进程管理器</div>
+              </div>
+              <div style="font-size:13px;color:#999;margin-bottom:4px;">端口 3002 · <span id="manager-status-text">检测中...</span></div>
+              <div style="font-size:12px;color:#bbb;">负责启停前后端服务</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="btn btn-outline" onclick="checkServerStatus()">🔄 刷新状态</button>
+            <button class="btn btn-outline" onclick="startAll()">▶ 一键启动全部</button>
+            <button class="btn btn-outline" onclick="stopAll()">■ 一键停止全部</button>
+          </div>
+          <div style="margin-top:16px;padding:16px;background:#f6ffed;border-radius:8px;font-size:13px;color:#389e0d;display:none;" id="server-msg"></div>
+          <div style="margin-top:16px;padding:14px;background:#fafafa;border-radius:8px;font-size:12px;color:#666;line-height:1.8;">
+            <strong>💡 说明：</strong><br>
+            • <strong>前端服务</strong>(3003)：提供用户端和管理端网页，由进程管理器启动/停止<br>
+            • <strong>后端服务</strong>(3001)：提供API接口，由进程管理器启动/停止<br>
+            • <strong>进程管理器</strong>(3002)：常驻进程，负责管理前后端服务的生命周期<br>
+            • 如果管理器未运行，请在终端手动执行 <code style="background:#eee;padding:1px 4px;border-radius:3px;">node manager.js</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 投稿审核 ══ -->
+
+    <div class="page" id="page-pending">
+      <div class="toolbar">
+        <div class="search-bar">
+          <input type="text" class="search-input" id="pending-search" placeholder="搜索待审核..." oninput="filterPending()">
+        </div>
+        <select class="filter-select" id="pending-status-filter" onchange="filterPending()">
+          <option value="pending">待审核</option>
+          <option value="all">全部</option>
+          <option value="rejected">已拒绝</option>
+        </select>
+        <button class="btn btn-success" onclick="approveAll()">✅ 全部通过</button>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">⏳ 投稿列表</div>
+          <span id="pending-count-info" style="font-size:13px;color:#999;"></span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr><th>标题</th><th>简介</th><th>来源平台</th><th>热度</th><th>提交人</th><th>提交时间</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody id="pending-table-body">
+              <tr><td colspan="8" style="text-align:center;color:#999;padding:40px">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 爬虫控制 ══ -->
+    <div class="page" id="page-crawler">
+      <div class="crawler-grid" id="platform-cards">
+        <div class="platform-card selected" data-platform="all" onclick="selectPlatform(this,'all')">
+          <div class="platform-card-icon">🌐</div>
+          <div class="platform-card-name">全部平台</div>
+          <div class="platform-card-status" id="status-all">等待爬取</div>
+        </div>
+        <div class="platform-card" data-platform="bilibili" onclick="selectPlatform(this,'bilibili')">
+          <div class="platform-card-icon">📺</div>
+          <div class="platform-card-name">B站</div>
+          <div class="platform-card-status" id="status-bilibili">等待爬取</div>
+        </div>
+        <div class="platform-card" data-platform="baidu" onclick="selectPlatform(this,'baidu')">
+          <div class="platform-card-icon">🔍</div>
+          <div class="platform-card-name">百度</div>
+          <div class="platform-card-status" id="status-baidu">等待爬取</div>
+        </div>
+        <div class="platform-card" data-platform="weibo" onclick="selectPlatform(this,'weibo')">
+          <div class="platform-card-icon">🌊</div>
+          <div class="platform-card-name">微博</div>
+          <div class="platform-card-status" id="status-weibo">等待爬取</div>
+        </div>
+        <div class="platform-card" data-platform="zhihu" onclick="selectPlatform(this,'zhihu')">
+          <div class="platform-card-icon">💬</div>
+          <div class="platform-card-name">知乎</div>
+          <div class="platform-card-status" id="status-zhihu">等待爬取</div>
+        </div>
+        <div class="platform-card" data-platform="douyin" onclick="selectPlatform(this,'douyin')">
+          <div class="platform-card-icon">🎵</div>
+          <div class="platform-card-name">抖音</div>
+          <div class="platform-card-status" id="status-douyin">等待爬取</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <button class="btn btn-primary" id="crawl-btn" onclick="runCrawler()">🤖 立即爬取</button>
+        <button class="btn btn-outline" onclick="loadCrawlerLog()">📋 刷新日志</button>
+        <span style="font-size:13px;color:#999;margin-left:auto;align-self:center;" id="crawl-time-info">
+          点击"立即爬取"开始抓取最新热梗
+        </span>
+      </div>
+
+      <div class="progress-wrap" id="crawl-progress-wrap" style="display:none;">
+        <div class="progress-bar" id="crawl-progress" style="width:0%"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="panel-header">
+          <div class="panel-title">📋 爬虫执行日志</div>
+        </div>
+        <div class="panel-body" style="padding:12px;">
+          <div class="log-area" id="log-area">
+            <div class="log-info">等待执行日志...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 筛选规则说明 -->
+      <div class="rule-box">
+        <span class="rule-box-icon">🔧</span>
+        <div>
+          <strong>爬虫工作原理</strong><br>
+          1. 并行爬取 B站/百度/微博/知乎/抖音 的热榜和热词数据<br>
+          2. 过滤热度 &lt; 5万 的内容<br>
+          3. 自动去重（与梗库和待审核列表对比标题）<br>
+          4. 通过的数据进入「投稿审核」队列，需管理员审核后才加入梗库<br>
+          5. 若平台接口不可用，自动使用备用数据确保系统正常运行
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ 新增/编辑梗 模态框 ══ -->
+<div class="modal-overlay" id="meme-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">新增热梗</div>
+      <button class="modal-close" onclick="closeModal('meme-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">* 梗名称</label>
+          <input type="text" class="form-input" id="edit-title" placeholder="如：哭哭马">
+        </div>
+        <div class="form-group">
+          <label class="form-label">表情符号</label>
+          <input type="text" class="form-input" id="edit-emoji" placeholder="如：🐴" maxlength="4">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">* 简介描述</label>
+        <textarea class="form-textarea" id="edit-description" placeholder="简要描述这个梗的含义和用法..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">分类</label>
+          <select class="form-select" id="edit-category">
+            <option>网络流行</option><option>职场</option><option>情感</option>
+            <option>搞笑</option><option>二次元</option><option>校园</option>
+            <option>影视综艺</option><option>饭圈</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">来源平台</label>
+          <input type="text" class="form-input" id="edit-source" placeholder="如：微博、B站">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">热度值（数字）</label>
+          <input type="number" class="form-input" id="edit-heat" placeholder="如：1000000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">热度等级</label>
+          <select class="form-select" id="edit-heatStatus">
+            <option value="new">new（新梗）</option>
+            <option value="rising">rising（上升）</option>
+            <option value="explode">explode（爆梗）</option>
+            <option value="classic">classic（经典）</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">起源说明</label>
+        <textarea class="form-textarea" id="edit-origin" placeholder="这个梗是怎么来的..." style="min-height:60px;"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">使用案例（每行一条）</label>
+        <textarea class="form-textarea" id="edit-examples" placeholder="例：今天又被骂了，哭哭马&#10;例：这道题太难了，哭哭马"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('meme-modal')">取消</button>
+      <button class="btn btn-primary" onclick="saveMeme()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 拒绝投稿 模态框 ══ -->
+<div class="modal-overlay" id="reject-modal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <div class="modal-title">拒绝此投稿</div>
+      <button class="modal-close" onclick="closeModal('reject-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">拒绝理由（可选）</label>
+        <textarea class="form-textarea" id="reject-reason" placeholder="如：内容重复、热度不足、信息不准确..." style="min-height:80px;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('reject-modal')">取消</button>
+      <button class="btn btn-danger" onclick="confirmReject()">❌ 确认拒绝</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 被过滤信息 页面 ══ -->
+<div class="page" id="page-filtered">
+  <div class="panel" style="margin-top:24px;">
+    <div class="panel-header">
+      <div class="panel-title">🗑️ 被过滤信息</div>
+      <div style="display:flex; gap:8px;">
+        <button class="topbar-btn" onclick="loadFiltered()">🔄 刷新</button>
+        <button class="topbar-btn danger" onclick="clearFiltered()">🗑️ 手动清除</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div id="filtered-info" style="margin-bottom:16px; color:var(--text-secondary); font-size:13px;"></div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>短语</th>
+              <th>过滤原因</th>
+              <th>视频数</th>
+              <th>总次数</th>
+              <th>时间</th>
+            </tr>
+          </thead>
+          <tbody id="filtered-table-body">
+          </tbody>
+        </table>
+      </div>
+      <div id="filtered-empty" class="empty-state" style="display:none; padding:40px;">
+        <div class="empty-icon">✅</div>
+        <div class="empty-text">暂无被过滤信息</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="login-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Supabase ??</div>
+      <button class="modal-close" onclick="closeModal('login-modal')">?</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">??</label>
+        <input class="form-input" id="login-email" type="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">??</label>
+        <input class="form-input" id="login-password" type="password">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('login-modal')">??</button>
+      <button class="btn btn-primary" onclick="login()">??</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';
+let supabaseClient = null;
+let authToken = '';
+let SUPABASE_URL = '';
+let SUPABASE_ANON_KEY = '';
+let currentRejectId = null;
+let currentPlatform = 'all';
+let allMemes = [];
+let allPending = [];
+let memePage = 1;
+const PAGE_SIZE = 15;
+
+async function loadConfig() {
+  try {
+    const resp = await fetch(API + '/config');
+    const data = await resp.json();
+    SUPABASE_URL = data.supabaseUrl || '';
+    SUPABASE_ANON_KEY = data.supabaseAnonKey || '';
+  } catch (_) {}
+}
+
+async function initAuth() {
+  await loadConfig();
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !window.supabase) return;
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data } = await supabaseClient.auth.getSession();
+  authToken = data?.session?.access_token || '';
+  syncAuthUI();
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    authToken = session?.access_token || '';
+    syncAuthUI();
+  });
+}
+
+function syncAuthUI() {
+  const loggedIn = !!authToken;
+  const authStatus = document.getElementById('auth-status');
+  if (authStatus) authStatus.textContent = loggedIn ? '???' : '???';
+  const loginBtn = document.getElementById('login-btn');
+  const logoutBtn = document.getElementById('logout-btn');
+  if (loginBtn) loginBtn.style.display = loggedIn ? 'none' : '';
+  if (logoutBtn) logoutBtn.style.display = loggedIn ? '' : 'none';
+}
+
+function authHeaders(extra = {}) {
+  return authToken ? { ...extra, Authorization: 'Bearer ' + authToken } : extra;
+}
+
+async function login() {
+  if (!supabaseClient) { showToast('???? Supabase ????', 'error'); return; }
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) return showToast(error.message, 'error');
+  closeModal('login-modal');
+  showToast('????', 'success');
+}
+
+async function logout() {
+  if (supabaseClient) await supabaseClient.auth.signOut();
+  authToken = '';
+  syncAuthUI();
+}
+
+function openLogin() {
+  document.getElementById('login-modal').classList.add('show');
+}
+
+// ════════════════════════════════
+// 工具函数
+// ════════════════════════════════
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function formatHeat(n) {
+  if (!n) return '—';
+  if (n >= 10000000) return (n/10000000).toFixed(1) + '千万';
+  if (n >= 1000000) return (n/1000000).toFixed(1) + '百万';
+  if (n >= 10000) return (n/10000).toFixed(1) + '万';
+  return n.toLocaleString();
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const date = new Date(d);
+  const now = new Date();
+  const diff = now - date;
+  if (diff < 3600000) return Math.floor(diff/60000) + '分钟前';
+  if (diff < 86400000) return Math.floor(diff/3600000) + '小时前';
+  if (diff < 2592000000) return Math.floor(diff/86400000) + '天前';
+  return date.toLocaleDateString('zh-CN', {month:'numeric',day:'numeric'});
+}
+
+function heatBarWidth(heat) {
+  const max = 5500000;
+  return Math.min(100, Math.round((heat / max) * 100));
+}
+
+function platformTag(p) {
+  return `<span class="platform-tag platform-${p||'网络'}">${p||'未知'}</span>`;
+}
+
+function heatBadge(s) {
+  const map = { new:'🆕 新梗', rising:'📈 上升', explode:'💥 爆梗', classic:'⭐ 经典' };
+  return `<span class="badge badge-${s}">${map[s]||s}</span>`;
+}
+
+// ════════════════════════════════
+// 页面切换
+// ════════════════════════════════
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+
+  const titles = { dashboard:'📊 数据总览', memes:'📚 梗库管理', pending:'⏳ 投稿审核', crawler:'🤖 爬虫控制', server:'⚙️ 服务控制', filtered:'🗑️ 被过滤信息' };
+  document.getElementById('topbar-title').textContent = titles[name] || '';
+
+  if (name === 'dashboard') initAuth();
+loadDashboard();
+  else if (name === 'memes') loadMemes();
+  else if (name === 'pending') loadPending();
+  else if (name === 'crawler') loadCrawlerLog();
+  else if (name === 'server') checkServerStatus();
+  else if (name === 'filtered') loadFiltered();
+}
+
+// ════════════════════════════════
+// 数据总览
+// ════════════════════════════════
+async function loadDashboard() {
+  try {
+    const [statsResp, pendingResp, memesResp] = await Promise.all([
+      fetch(API + '/stats').then(r => r.json()),
+      fetch(API + '/pending').then(r => r.json()),
+      fetch(API + '/memes?admin=1&sort=heat').then(r => r.json())
+    ]);
+
+    document.getElementById('stat-total').textContent = statsResp.total;
+    document.getElementById('stat-active-info').textContent = `共 ${statsResp.total} 条梗`;
+    document.getElementById('stat-pending').textContent = statsResp.pending;
+    document.getElementById('stat-filtered').textContent = statsResp.active;
+    document.getElementById('stat-last-crawl').textContent = statsResp.last_crawl ? formatDate(statsResp.last_crawl) : '未执行';
+    document.getElementById('stat-categories').textContent = statsResp.categories + ' 个分类';
+    document.getElementById('pending-badge').textContent = statsResp.pending;
+
+    // 待审核列表（前5条）
+    const pending5 = (pendingResp.data || []).filter(p => p.status === 'pending').slice(0, 5);
+    const tbody = document.getElementById('dashboard-pending-body');
+    if (!pending5.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;padding:30px">暂无待审核投稿</td></tr>';
+    } else {
+      tbody.innerHTML = pending5.map(p => `
+        <tr>
+          <td><div class="cell-title">${p.title}</div></td>
+          <td>${platformTag(p.sourcePlatform || p.submitter)}</td>
+          <td>${formatHeat(p.heatValue)}</td>
+          <td>${formatDate(p.submittedAt)}</td>
+          <td class="actions">
+            <button class="btn btn-success btn-sm" onclick="approve('${p.id}')">✅</button>
+            <button class="btn btn-danger btn-sm" onclick="reject('${p.id}')">❌</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Top10
+    const top10 = (memesResp.data || []).slice(0, 10);
+    document.getElementById('top10-body').innerHTML = top10.map((m, i) => `
+      <tr>
+        <td style="font-weight:800;color:${i<3?'#ff4d4f':'#999'}">${i+1}</td>
+        <td><div class="cell-title">${m.emoji||'🔥'} ${m.title}</div></td>
+        <td>
+          <div class="heat-bar-wrap">
+            <div class="heat-bar"><div class="heat-bar-fill" style="width:${heatBarWidth(m.heatValue)}%"></div></div>
+            <span class="heat-num">${formatHeat(m.heatValue)}</span>
+          </div>
+        </td>
+        <td><span class="badge badge-${m.category==='网络流行'?'new':'classic'}">${m.category}</span></td>
+        <td><span class="status-tag status-approved">✅ 已发布</span></td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" style="text-align:center;color:#999;padding:30px">暂无数据</td></tr>';
+
+  } catch (e) {
+    showToast('加载失败：' + e.message, 'error');
+  }
+}
+
+// ════════════════════════════════
+// 梗库管理
+// ════════════════════════════════
+async function loadMemes() {
+  try {
+    const resp = await fetch(API + '/memes?admin=1&sort=heat').then(r => r.json());
+    allMemes = resp.data || [];
+    renderMemeTable();
+  } catch (e) {
+    showToast('加载梗库失败', 'error');
+  }
+}
+
+function filterMemes() {
+  memePage = 1;
+  renderMemeTable();
+}
+
+function renderMemeTable() {
+  const q = (document.getElementById('meme-search')?.value || '').toLowerCase();
+  const cat = document.getElementById('meme-cat-filter')?.value || '';
+  const sortBy = document.getElementById('meme-sort')?.value || 'heat';
+
+  let data = allMemes.filter(m =>
+    (!q || m.title.toLowerCase().includes(q) || (m.description||'').toLowerCase().includes(q)) &&
+    (!cat || m.category === cat)
+  );
+
+  if (sortBy === 'new') data.sort((a, b) => new Date(b.createdAt||0) - new Date(a.createdAt||0));
+  else data.sort((a, b) => (b.heatValue||0) - (a.heatValue||0));
+
+  const total = data.length;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const paged = data.slice((memePage-1)*PAGE_SIZE, memePage*PAGE_SIZE);
+
+  document.getElementById('meme-count-info').textContent = `共 ${total} 条`;
+
+  const tbody = document.getElementById('meme-table-body');
+  if (!paged.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#999;padding:40px">暂无数据</td></tr>';
+    document.getElementById('meme-pagination').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = paged.map(m => `
+    <tr>
+      <td style="font-size:24px;">${m.emoji||'🔥'}</td>
+      <td><div class="cell-title">${m.title}</div></td>
+        <td>
+          <div class="cell-desc">${m.description||'—'}</div>
+          ${m.sourceName ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">📌 ${m.sourceName}</div>` : ''}
+          ${m.sourceUrl && m.sourceUrl !== '#' ? `<div style="margin-top:4px;"><a href="${m.sourceUrl}" target="_blank" style="font-size:12px;color:var(--info);text-decoration:none;">🔗 查看来源</a></div>` : ''}
+        </td>
+        <td><span class="badge badge-${m.category==='搞笑'?'rising':'new'}">${m.category||'—'}</span></td>
+        <td>${platformTag(m.sourcePlatform)}</td>
+      <td>
+        <div class="heat-bar-wrap">
+          <div class="heat-bar"><div class="heat-bar-fill" style="width:${heatBarWidth(m.heatValue)}%"></div></div>
+          <span class="heat-num">${formatHeat(m.heatValue)}</span>
+        </div>
+      </td>
+      <td>${heatBadge(m.heatStatus||'new')}</td>
+      <td style="color:#999;font-size:12px;">${formatDate(m.createdAt)}</td>
+      <td class="actions">
+        <button class="btn btn-warning btn-sm" onclick="openEditModal(${m.id})">✏️ 编辑</button>
+        <button class="btn btn-primary btn-sm" onclick="refreshMeme(${m.id},'${m.title}')">🔄 刷新</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMeme(${m.id},'${m.title}')">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+
+  // 分页
+  let paginHtml = '';
+  if (totalPages > 1) {
+    paginHtml += `<button class="page-btn" onclick="goPage(${memePage-1})" ${memePage===1?'disabled':''}>‹</button>`;
+    for (let i = Math.max(1,memePage-2); i <= Math.min(totalPages,memePage+2); i++) {
+      paginHtml += `<button class="page-btn${i===memePage?' active':''}" onclick="goPage(${i})">${i}</button>`;
+    }
+    paginHtml += `<button class="page-btn" onclick="goPage(${memePage+1})" ${memePage===totalPages?'disabled':''}>›</button>`;
+    paginHtml += `<span class="page-info">${memePage}/${totalPages}</span>`;
+  }
+  document.getElementById('meme-pagination').innerHTML = paginHtml;
+}
+
+function goPage(p) {
+  const total = allMemes.length;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (p < 1 || p > totalPages) return;
+  memePage = p;
+  renderMemeTable();
+}
+
+// ════════════════════════════════
+// 新增 / 编辑梗
+// ════════════════════════════════
+function openAddModal() {
+  document.getElementById('modal-title').textContent = '新增热梗';
+  document.getElementById('edit-id').value = '';
+  ['title','emoji','description','origin','source'].forEach(k => document.getElementById('edit-'+k).value = '');
+  document.getElementById('edit-heat').value = '';
+  document.getElementById('edit-category').value = '网络流行';
+  document.getElementById('edit-heatStatus').value = 'new';
+  document.getElementById('edit-examples').value = '';
+  document.getElementById('meme-modal').classList.add('show');
+}
+
+function openEditModal(id) {
+  const m = allMemes.find(m => m.id == id);
+  if (!m) return;
+  document.getElementById('modal-title').textContent = '编辑热梗';
+  document.getElementById('edit-id').value = id;
+  document.getElementById('edit-title').value = m.title || '';
+  document.getElementById('edit-emoji').value = m.emoji || '';
+  document.getElementById('edit-description').value = m.description || '';
+  document.getElementById('edit-category').value = m.category || '网络流行';
+  document.getElementById('edit-source').value = m.sourcePlatform || '';
+  document.getElementById('edit-heat').value = m.heatValue || '';
+  document.getElementById('edit-heatStatus').value = m.heatStatus || 'new';
+  document.getElementById('edit-origin').value = m.origin || '';
+  document.getElementById('edit-examples').value = (m.examples || []).join('\n');
+  document.getElementById('meme-modal').classList.add('show');
+}
+
+async function saveMeme() {
+  const id = document.getElementById('edit-id').value;
+  const title = document.getElementById('edit-title').value.trim();
+  const description = document.getElementById('edit-description').value.trim();
+  if (!title || !description) { showToast('标题和描述不能为空', 'error'); return; }
+
+  const payload = {
+    title,
+    emoji: document.getElementById('edit-emoji').value || '🔥',
+    description,
+    category: document.getElementById('edit-category').value,
+    sourcePlatform: document.getElementById('edit-source').value || '管理员添加',
+    heatValue: parseInt(document.getElementById('edit-heat').value) || 100000,
+    heatStatus: document.getElementById('edit-heatStatus').value,
+    origin: document.getElementById('edit-origin').value,
+    examples: document.getElementById('edit-examples').value.split('\n').filter(Boolean)
+  };
+
+  try {
+    if (id) {
+      await fetch(API + '/memes/' + id, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      showToast('✅ 更新成功', 'success');
+    } else {
+      await fetch(API + '/memes', { method:'POST', headers: authHeaders({'Content-Type':'application/json'}), body:JSON.stringify(payload) });
+      showToast('✅ 新增成功', 'success');
+    }
+    closeModal('meme-modal');
+    loadMemes();
+  } catch (e) {
+    showToast('保存失败：' + e.message, 'error');
+  }
+}
+
+async function deleteMeme(id, title) {
+  if (!confirm(`确认删除"${title}"？此操作不可撤销。`)) return;
+  try {
+    await fetch(API + '/memes/' + id, { method:'DELETE' });
+    showToast('🗑️ 已删除', 'success');
+    loadMemes();
+    loadDashboard();
+  } catch (e) {
+    showToast('删除失败', 'error');
+  }
+}
+
+// ════════════════════════════════
+// 投稿审核
+// ════════════════════════════════
+async function loadPending() {
+  try {
+    const resp = await fetch(API + '/pending').then(r => r.json());
+    allPending = resp.data || [];
+    renderPendingTable();
+    const pendingCount = allPending.filter(p => p.status === 'pending').length;
+    document.getElementById('pending-badge').textContent = pendingCount;
+  } catch (e) {
+    showToast('加载失败', 'error');
+  }
+}
+
+function filterPending() {
+  renderPendingTable();
+}
+
+function renderPendingTable() {
+  const q = (document.getElementById('pending-search')?.value || '').toLowerCase();
+  const statusFilter = document.getElementById('pending-status-filter')?.value || 'pending';
+
+  let data = allPending.filter(p =>
+    (statusFilter === 'all' || p.status === statusFilter) &&
+    (!q || p.title.toLowerCase().includes(q) || (p.description||'').toLowerCase().includes(q))
+  );
+
+  document.getElementById('pending-count-info').textContent = `共 ${data.length} 条`;
+
+  const tbody = document.getElementById('pending-table-body');
+  if (!data.length) {
+    tbody.innerHTML = `
+      <tr><td colspan="8">
+        <div class="empty-state"><div class="empty-icon">🎉</div>
+        <div class="empty-text">暂无${statusFilter === 'pending' ? '待审核' : ''}投稿</div></div>
+      </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(p => `
+    <tr>
+      <td><div class="cell-title">${p.title}</div></td>
+      <td>
+        <div class="cell-desc">${p.description||'—'}</div>
+        ${p.sourceName ? `<div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">📌 ${p.sourceName}</div>` : ''}
+        ${p.sourceUrl && p.sourceUrl !== '#' ? `<div style="margin-top:4px;"><a href="${p.sourceUrl}" target="_blank" style="font-size:12px;color:var(--info);text-decoration:none;">🔗 查看来源</a></div>` : ''}
+      </td>
+      <td>${platformTag(p.sourcePlatform)}</td>
+      <td>${formatHeat(p.heatValue)}</td>
+      <td style="font-size:12px;color:#999;">${p.submitter||'匿名'}</td>
+      <td style="font-size:12px;color:#999;">${formatDate(p.submittedAt)}</td>
+      <td><span class="status-tag status-${p.status||'pending'}">${
+        {pending:'⏳ 待审核', approved:'✅ 已通过', rejected:'❌ 已拒绝'}[p.status]||p.status
+      }</span></td>
+      <td class="actions">
+        ${p.status === 'pending' ? `
+          <button class="btn btn-success btn-sm" onclick="approve('${p.id}')">✅ 通过</button>
+          <button class="btn btn-danger btn-sm" onclick="reject('${p.id}')">❌ 拒绝</button>
+        ` : '—'}
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function approve(id) {
+  try {
+    const resp = await fetch(API + '/pending-approve?id=' + id, { method:'POST', headers: authHeaders() });
+    const data = await resp.json();
+    if (data.success) {
+      showToast('✅ 已通过并加入梗库', 'success');
+      loadPending();
+    } else {
+      showToast(data.error || '操作失败', 'error');
+    }
+  } catch (e) {
+    showToast('操作失败', 'error');
+  }
+}
+
+async function approveAll() {
+  const pendingItems = allPending.filter(p => p.status === 'pending');
+  if (!pendingItems.length) { showToast('没有待审核投稿', 'warning'); return; }
+  if (!confirm(`确认全部通过 ${pendingItems.length} 条投稿？`)) return;
+  for (const p of pendingItems) {
+    await approve(p.id);
+    await new Promise(r => setTimeout(r, 100));
+  }
+  showToast(`✅ 已全部通过 ${pendingItems.length} 条`, 'success');
+}
+
+async function reject(id) {
+  try {
+    await fetch(API + '/pending-reject?id=' + id, {
+      method:'POST',
+      headers: authHeaders({'Content-Type':'application/json'}),
+      body:JSON.stringify({ reason: '' })
+    });
+    showToast('已拒绝该投稿', 'warning');
+    loadPending();
+    if (document.getElementById('page-dashboard').classList.contains('active')) {
+      loadDashboard();
+    }
+  } catch (e) {
+    showToast('操作失败', 'error');
+  }
+}
+
+// ════════════════════════════════
+// 爬虫控制
+// ════════════════════════════════
+function selectPlatform(el, platform) {
+  document.querySelectorAll('.platform-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  currentPlatform = platform;
+}
+
+async function runCrawler() {
+  const btn = document.getElementById('crawl-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 爬取中...';
+
+  const logArea = document.getElementById('log-area');
+  logArea.innerHTML = '<div class="log-info">🤖 爬虫启动中...</div>';
+
+  document.getElementById('crawl-progress-wrap').style.display = 'block';
+  let prog = 0;
+  const timer = setInterval(() => {
+    prog = Math.min(prog + Math.random() * 15, 90);
+    document.getElementById('crawl-progress').style.width = prog + '%';
+  }, 500);
+
+  try {
+    const resp = await fetch(API + '/crawler-log').then(r => r.json());
+    const data = await resp.json();
+
+    logArea.innerHTML += `<div class="log-ok">✅ ${data.message}</div>`;
+    logArea.innerHTML += `<div class="log-info">⏳ 爬虫在后台执行，约需10-15秒...</div>`;
+
+    document.getElementById('crawl-time-info').textContent = `上次爬取：${new Date().toLocaleTimeString('zh-CN')}`;
+
+    // 等待爬虫完成后刷新日志
+    setTimeout(async () => {
+      clearInterval(timer);
+      document.getElementById('crawl-progress').style.width = '100%';
+      await loadCrawlerLog();
+      btn.disabled = false;
+      btn.textContent = '🤖 立即爬取';
+      setTimeout(() => {
+        document.getElementById('crawl-progress-wrap').style.display = 'none';
+        document.getElementById('crawl-progress').style.width = '0%';
+      }, 1000);
+      // 刷新待审核数量
+      const pendingResp = await fetch(API + '/stats').then(r => r.json());
+      document.getElementById('pending-badge').textContent = pendingResp.pending;
+      showToast('🤖 爬取完成！', 'success');
+    }, 15000);
+
+  } catch (e) {
+    clearInterval(timer);
+    logArea.innerHTML += `<div class="log-error">❌ 请求失败：${e.message}</div>`;
+    logArea.innerHTML += `<div class="log-warn">⚠️ 请确认后端服务已启动（Vercel ???）</div>`;
+    btn.disabled = false;
+    btn.textContent = '🤖 立即爬取';
+    showToast('爬虫请求失败，请检查后端服务', 'error');
+  }
+}
+
+async function loadCrawlerLog() {
+  try {
+    const resp = await fetch(API + '/crawler-log').then(r => r.json());
+    const logs = (resp.data || []).slice().reverse(); // 最新在前
+    const logArea = document.getElementById('log-area');
+
+    if (!logs.length) {
+      logArea.innerHTML = '<div class="log-info">暂无执行记录，点击"立即爬取"开始</div>';
+      return;
+    }
+
+    logArea.innerHTML = logs.slice(0, 10).map(log => `
+      <div class="log-line">
+        <span class="log-info">[${new Date(log.time).toLocaleString('zh-CN')}]</span>
+        ${log.dryRun ? '<span class="log-warn">[测试模式]</span>' : ''}
+        <span class="log-ok">发现 ${log.found||0} 条热梗</span>
+        <span class="log-ok">，新增待审核 ${log.added||0} 条</span>
+        ${log.platforms?.map(p => `
+          <div style="margin-left:20px;font-size:12px;">
+            <span class="${p.status==='ok'?'log-ok':'log-error'}">${p.status==='ok'?'✅':'❌'} ${p.name}: ${p.count} 条${p.error?` (${p.error})`:''}</span>
+          </div>
+        `).join('') || ''}
+      </div>
+      <div style="border-bottom:1px solid rgba(255,255,255,.06);margin:6px 0;"></div>
+    `).join('');
+
+    // 更新平台状态
+    const lastLog = logs[0];
+    if (lastLog?.platforms) {
+      const platformMap = { 'B站':'bilibili', '百度':'baidu', '微博':'weibo', '知乎':'zhihu', '抖音':'douyin' };
+      for (const p of lastLog.platforms) {
+        const key = platformMap[p.name];
+        if (key) {
+          const el = document.getElementById('status-' + key);
+          if (el) {
+            el.textContent = p.status === 'ok' ? `✅ ${p.count}条` : '❌ 失败';
+            el.className = 'platform-card-status ' + (p.status === 'ok' ? 'ok' : 'error');
+          }
+        }
+      }
+    }
+  } catch (e) {
+    document.getElementById('log-area').innerHTML = `<div class="log-warn">⚠️ 无法加载日志（后端未启动？）</div>`;
+  }
+}
+
+// ════════════════════════════════
+// 模态框
+// ════════════════════════════════
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// 点击遮罩关闭
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('show');
+  });
+});
+
+// ════════════════════════════════
+// 刷新全部
+// ════════════════════════════════
+async function refreshAll() {
+  const page = document.querySelector('.page.active')?.id?.replace('page-', '');
+  if (page === 'dashboard') await loadDashboard();
+  else if (page === 'memes') await loadMemes();
+  else if (page === 'pending') await loadPending();
+  else if (page === 'crawler') await loadCrawlerLog();
+  else if (page === 'server') await checkServerStatus();
+  else if (page === 'filtered') await loadFiltered();
+  showToast('✅ 已刷新', 'success');
+}
+
+// ══ 被过滤信息 ══
+async function loadFiltered() {
+  try {
+    const resp = await fetch(API + '/filtered').then(r => r.json());
+    const filtered = resp.filtered || [];
+    document.getElementById('filtered-info').textContent = `共 ${filtered.length} 条被过滤信息（爬取时自动清除）`;
+    
+    const tbody = document.getElementById('filtered-table-body');
+    if (!filtered.length) {
+      tbody.innerHTML = '';
+      document.getElementById('filtered-empty').style.display = 'block';
+      return;
+    }
+    document.getElementById('filtered-empty').style.display = 'none';
+    tbody.innerHTML = filtered.map(f => `
+      <tr>
+        <td><strong>${f.phrase}</strong></td>
+        <td>${f.reason}</td>
+        <td>${f.videoCount || 0}</td>
+        <td>${f.totalCount || 0}</td>
+        <td>${new Date(f.timestamp).toLocaleString('zh-CN')}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    showToast('加载失败', 'error');
+  }
+}
+
+async function clearFiltered() {
+  if (!confirm('确定要清除所有被过滤信息吗？\n（下次爬取时会自动清除）')) return;
+  try {
+    await fetch(API + '/filtered', { method: 'DELETE' }).then(r => r.json());
+    showToast('🗑️ 已清除', 'success');
+    await loadFiltered();
+  } catch (e) {
+    showToast('清除失败', 'error');
+  }
+}
+
+// ════════════════════════════════
+// 服务控制（调用 manager:3002）
+// ════════════════════════════════
+const MANAGER_API = '/api';
+
+function setServiceCard(service, running, pid) {
+  const dot = document.getElementById(service + '-status-dot');
+  const text = document.getElementById(service + '-status-text');
+  const pidEl = document.getElementById(service + '-pid');
+  const btnStart = document.getElementById('btn-' + service + '-start');
+  const btnStop = document.getElementById('btn-' + service + '-stop');
+  const btnRestart = document.getElementById('btn-' + service + '-restart');
+
+  if (running) {
+    dot.style.background = '#52c41a';
+    dot.style.boxShadow = '0 0 6px rgba(82,196,26,.4)';
+    text.textContent = '运行中';
+    text.style.color = '#52c41a';
+    pidEl.textContent = pid || '—';
+    if (btnStart) btnStart.style.display = 'none';
+    if (btnStop) btnStop.style.display = '';
+    if (btnRestart) btnRestart.style.display = '';
+  } else {
+    dot.style.background = '#ff4d4f';
+    dot.style.boxShadow = 'none';
+    text.textContent = '已停止';
+    text.style.color = '#ff4d4f';
+    pidEl.textContent = '—';
+    if (btnStart) btnStart.style.display = '';
+    if (btnStop) btnStop.style.display = 'none';
+    if (btnRestart) btnRestart.style.display = 'none';
+  }
+}
+
+async function checkServerStatus() {
+  const msgEl = document.getElementById('server-msg');
+  if (msgEl) {
+    msgEl.style.display = '';
+    msgEl.style.cssText = 'margin-top:16px;padding:14px;background:#fff7e6;border-radius:8px;font-size:13px;color:#ad6800;';
+    msgEl.textContent = 'Vercel ????????????????????';
+  }
+}
+
+function viewUserFrontend() {
+  window.open('/', '_blank');
+}
+
+async function serverControl(action, service) {
+  const msgEl = document.getElementById('server-msg');
+  if (msgEl) {
+    msgEl.style.display = '';
+    msgEl.style.cssText = 'margin-top:16px;padding:14px;background:#fff7e6;border-radius:8px;font-size:13px;color:#ad6800;';
+    msgEl.textContent = 'Vercel ???????????/???';
+  }
+}
+
+async function startAll() {
+  const msgEl = document.getElementById('server-msg');
+  if (msgEl) {
+    msgEl.style.display = '';
+    msgEl.style.cssText = 'margin-top:16px;padding:14px;background:#fff7e6;border-radius:8px;font-size:13px;color:#ad6800;';
+    msgEl.textContent = 'Vercel ?????????????';
+  }
+}
+
+async function stopAll() {
+  const msgEl = document.getElementById('server-msg');
+  if (msgEl) {
+    msgEl.style.display = '';
+    msgEl.style.cssText = 'margin-top:16px;padding:14px;background:#fff7e6;border-radius:8px;font-size:13px;color:#ad6800;';
+    msgEl.textContent = 'Vercel ?????????????';
+  }
+}
+
+// ════════════════════════════════
+// 初始化
+// ════════════════════════════════
+loadDashboard();
+
+async function refreshMeme(id, title) {
+  if (!confirm(`确认刷新"${title}"的信息？将尝试从来源重新获取最新热度。`)) return;
+  try {
+    const resp = await fetch(API + '/memes-refresh?id=' + id, { method:'POST', headers: authHeaders() });
+    const data = await resp.json();
+    if (data.success) {
+      const info = data.refreshInfo ? '（' + data.refreshInfo + '）' : '';
+      showToast('🔄 已刷新「' + (data.data?.title||title) + '」' + info, 'success');
+      if (typeof loadMemes === 'function') loadMemes();
+      if (typeof loadDashboard === 'function') loadDashboard();
+    } else {
+      showToast(data.error || '刷新失败', 'error');
+    }
+  } catch (e) {
+    showToast('刷新失败：' + e.message, 'error');
+  }
+}
+</script>
+</body>
+</html>
